@@ -9,7 +9,7 @@ import vscode = require('vscode');
 import fs = require('fs');
 import path = require('path');
 
-import { initNimSuggest, closeAllNimSuggestProcesses, closeNimSuggestProcess } from './nimSuggestExec';
+import { initNimSuggest, closeAllNimSuggestProcesses, closeNimSuggestProcess,setNimSuggester} from './nimSuggestExec';
 import { NimCompletionItemProvider } from './nimSuggest';
 import { NimDefinitionProvider } from './nimDeclaration';
 import { NimReferenceProvider } from './nimReferences';
@@ -20,7 +20,7 @@ import { NimSignatureHelpProvider } from './nimSignature';
 import { NimFormattingProvider } from './nimFormatting';
 import { check, ICheckResult } from './nimBuild';
 import { NIM_MODE } from './nimMode';
-import { showHideStatus } from './nimStatus';
+import { showHideStatus,showNimVer } from './nimStatus';
 import { getDirtyFile } from './nimUtils';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
@@ -29,8 +29,10 @@ var terminal: vscode.Terminal;
 
 export function activate(ctx: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('nim.run.file', runFile);
-
-    initNimSuggest(ctx);
+    vscode.commands.registerCommand('nim.setSuggester', setNimSuggester);
+    initNimSuggest(ctx).then(x => {
+        showNimVer(x['version'], x['path']);
+    });
     ctx.subscriptions.push(vscode.languages.registerCompletionItemProvider(NIM_MODE, new NimCompletionItemProvider(), '.', ' '));
     ctx.subscriptions.push(vscode.languages.registerDefinitionProvider(NIM_MODE, new NimDefinitionProvider()));
     ctx.subscriptions.push(vscode.languages.registerReferenceProvider(NIM_MODE, new NimReferenceProvider()));

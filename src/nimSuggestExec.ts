@@ -8,13 +8,13 @@
 import vscode = require('vscode');
 import cp = require('child_process');
 import path = require('path');
-import os = require('os');
+// import os = require('os');
 import fs = require('fs');
-import net = require('net');
+// import net = require('net');
 import elrpc = require('./elrpc/elrpc');
-import sexp = require('./elrpc/sexp');
+// import sexp = require('./elrpc/sexp');
 import { prepareConfig, getProjectFile, isProjectMode, getNimExecPath, removeDirSync, correctBinname } from './nimUtils';
-import { hideNimStatus, showNimStatus } from './nimStatus';
+import { commands } from 'vscode';
 
 class NimSuggestProcessDescription {
     process: cp.ChildProcess;
@@ -148,21 +148,59 @@ export function isNimSuggestVersion(version: string): boolean {
     return true;
 }
 
-export async function initNimSuggest(ctx: vscode.ExtensionContext) {
+export async function setNimSuggester(){
+    let name = 'nimsuggest'
+    let suggesterBin = getNimSuggestPath()
+    if (process.env['PATH']) {
+        var pathparts = (<string>process.env.PATH).split((<any>path).delimiter);
+        let pathes = pathparts.map(dir => path.join(dir, correctBinname(name)));
+        let ExistedPathes = pathes.filter(x => fs.existsSync(x));
+        let items = []
+        ExistedPathes.forEach( v => {
+            let versionOutput = cp.spawnSync(v, ['--version'], { cwd: vscode.workspace.rootPath }).output.toString();
+            let versionArgs = /.+Version\s([\d|\.]+)\s.+/g.exec(versionOutput);
+            if (versionArgs && versionArgs.length === 2) {
+                let ver = versionArgs[1];
+                items.push( {label:`nimsuggest`,description:`${ver}`,detail:v } )
+            }
+        })
+        const p = vscode.window.showQuickPick(items, { placeHolder: `current ${suggesterBin}`, matchOnDetail: true });
+        p.then(item => {
+            if (!item || suggesterBin === item.detail) return;
+            let nim = vscode.workspace.getConfiguration("nim")
+            if ( !!nim ) {
+                nim.update('nimsuggest',_nimSuggestPath)
+                commands.executeCommand('workbench.action.reloadWindow');
+            }
+        })
+    }
+}
+
+export async function initNimSuggest(ctx: vscode.ExtensionContext):Promise<Object> {
     prepareConfig();
     // let check nimsuggest related nim executable
-    let binPath = await getNimExecPath()
-    let nimSuggestNewPath = path.resolve(path.dirname(binPath), correctBinname('nimsuggest'));
+    var nimSuggestNewPath;
+    let nimsuggest = vscode.workspace.getConfiguration('nim').get('nimsuggest');
+    if (nimsuggest) {
+        nimSuggestNewPath = nimsuggest;
+    } else {
+        let binPath = await getNimExecPath();
+        nimSuggestNewPath = path.resolve(path.dirname(binPath), correctBinname('nimsuggest'));
+    }
     if (fs.existsSync(nimSuggestNewPath)) {
         _nimSuggestPath = nimSuggestNewPath;
         let versionOutput = cp.spawnSync(getNimSuggestPath(), ['--version'], { cwd: vscode.workspace.rootPath }).output.toString();
-        let versionArgs = /.+Version\s([\d|\.]+)\s\(.+/g.exec(versionOutput);
+        let versionArgs = /.+Version\s([\d|\.]+)\s.+/g.exec(versionOutput);
         if (versionArgs && versionArgs.length === 2) {
             _nimSuggestVersion = versionArgs[1];
         }
 
         console.log(versionOutput);
         console.log('Nimsuggest version: ' + _nimSuggestVersion);
+        return Promise.resolve({
+            path: _nimSuggestPath,
+            version: _nimSuggestVersion
+        });
     }
     vscode.workspace.onDidChangeConfiguration(prepareConfig);
 }
@@ -231,6 +269,7 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
     } catch (e) {
         console.error(e);
         await closeNimSuggestProcess(filename);
+        return Promise.reject();
     }
 }
 

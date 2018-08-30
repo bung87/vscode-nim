@@ -8,8 +8,9 @@
 import { NIM_MODE } from './nimMode';
 import vscode = require('vscode');
 
-let statusBarEntry: vscode.StatusBarItem;
-let progressBarEntry: vscode.StatusBarItem;
+var statusBarEntry: vscode.StatusBarItem;
+var progressBarEntry: vscode.StatusBarItem;
+export var nimVerEntry: vscode.StatusBarItem;
 
 export function showHideStatus() {
   if (!statusBarEntry) {
@@ -21,6 +22,7 @@ export function showHideStatus() {
   }
   if (vscode.languages.match(NIM_MODE, vscode.window.activeTextEditor.document)) {
     statusBarEntry.show();
+    nimVerEntry.show();
     return;
   }
   statusBarEntry.hide();
@@ -49,6 +51,15 @@ export function showNimProgress(message: string) {
   progressBarEntry.tooltip = message;
   progressBarEntry.show();
 }
+
+export function showNimVer(version,path: string) {
+  nimVerEntry = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+  nimVerEntry.text = `Nimsuggest ${version}`;
+  nimVerEntry.command = 'nim.setSuggester';
+  nimVerEntry.tooltip = path;
+  nimVerEntry.show();
+}
+
 
 export function updateNimProgress(message: string) {
     progressBarEntry.text = message;

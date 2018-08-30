@@ -11,7 +11,7 @@
     "icon": "images/nim_icon.png",
     "homepage": "https://github.com/pragmagic/vscode-nim/blob/master/README.md",
     "categories": [
-        "Languages",
+        "Programming Languages",
         "Linters"
     ],
     "galleryBanner": {
@@ -53,7 +53,8 @@
         "onLanguage:nimble",
         "onCommand:nim.build",
         "onCommand:nim.run",
-        "onCommand:nim.runTest"
+        "onCommand:nim.runTest",
+        "onCommand:nim.setSuggester"
     ],
     "main": "./out/src/nimMain",
     "contributes": {
@@ -87,6 +88,10 @@
             {
                 "command": "nim.run.file",
                 "title": "Nim: Run selected file"
+            },
+            {
+                "command": "nim.setSuggester",
+                "title": "set Nim Suggester"
             }
         ],
         "menus": {
@@ -107,6 +112,12 @@
             "type": "object",
             "title": "Nim configuration",
             "properties": {
+                "nim.nimsuggest":{
+                    "type": "string",
+                    "default": "",
+                    "scope":"window",
+                    "description": "nimsuggest bin path"
+                },
                 "nim.project": {
                     "type": "array",
                     "default": [],

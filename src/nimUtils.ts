@@ -13,18 +13,24 @@ import vscode = require('vscode');
 import lstat = require('lstat');
 import bluebird = require('bluebird');
 
-import { showNimStatus, hideNimStatus } from './nimStatus';
+// import { showNimStatus, hideNimStatus } from './nimStatus';
 
 let _pathesCache: { [tool: string]: string; } = {};
 var _projects: string[] = [];
 
 export async function getNimExecPath(): Promise<string> {
-    let path = getBinPath('nim');
-    if (!path) {
+    var binPath;
+    let nimsuggest: string = vscode.workspace.getConfiguration('nim').get('nimsuggest');
+    if (nimsuggest) {
+        binPath = path.resolve(path.dirname(nimsuggest), 'nim');
+    }else {
+        binPath = await getBinPath('nim');
+    }
+    if (!binPath) {
         vscode.window.showInformationMessage('No \'nim\' binary could be found in PATH environment variable');
         return Promise.reject()
     }
-    return Promise.resolve(path);
+    return Promise.resolve(binPath);
 }
 
 /**
@@ -42,6 +48,10 @@ export async function getNimPrettyExecPath(): Promise<string> {
         }
     }
     return _pathesCache[toolname];
+}
+
+export function setPathesCache(tool,path:string):void{
+    _pathesCache[tool] = path
 }
 
 export function getProjectFile(filename: string) {
@@ -93,20 +103,31 @@ export function prepareConfig(): void {
 }
 
 export async function promiseSymbolLink(path: string): Promise<string>{
-    return lstat(path).then(stat => {
-        if (stat.isSymbolicLink()){
-            return Promise.resolve(path)
-        }else{
+    if(!fs.existsSync(path)){
+        return Promise.reject("")
+    }
+    try {
+        return lstat(path).then(stat => {
+            if (stat.isSymbolicLink()){
+                return Promise.resolve(path)
+            }else {
+                return Promise.reject("");
+            }
+          }).catch( e => {
+              console.error(e);
             return Promise.reject("");
-        }
-      });
+          });
+    } catch ( e ) {
+        console.error(e);
+        return Promise.reject("");
+    }
 }
 
 export async function getBinPath(tool: string): Promise<string> {
     if (_pathesCache[tool]) return Promise.resolve(_pathesCache[tool]);
     if (process.env['PATH']) {
         var pathparts = (<string>process.env.PATH).split((<any>path).delimiter);
-        let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)))
+        let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)));
         let promises = pathes.map(x => promiseSymbolLink(x))
         let anyLink = await bluebird.any(promises);
         if (anyLink){
