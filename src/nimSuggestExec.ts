@@ -172,9 +172,10 @@ export async function setNimSuggester(){
         p.then(item => {
             if (!item || suggesterBin === item.detail) return;
             let nim = vscode.workspace.getConfiguration('nim');
-            nim.update('nimsuggest', item.detail)
-            commands.executeCommand('workbench.action.reloadWindow');
-        })
+            nim.update('nimsuggest', item.detail).then( _ =>{
+                commands.executeCommand('workbench.action.reloadWindow');
+            });
+        });
     }
 }
 
@@ -298,7 +299,7 @@ async function getNimSuggestProcess(nimProject: string): Promise<NimSuggestProce
     if (!nimSuggestProcessCache[nimProject]) {
         nimSuggestProcessCache[nimProject] = new Promise<NimSuggestProcessDescription>((resolve, reject) => {
             let nimConfig = vscode.workspace.getConfiguration('nim');
-            var args = ['--epc', '--v2'];
+            var args = ['--epc', '--v2','--debug'];
             if (!!nimConfig['logNimsuggest']) {
                 args.push('--log');
             }
