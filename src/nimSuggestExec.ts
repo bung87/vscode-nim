@@ -121,6 +121,10 @@ export class NimSuggestResult {
 }
 
 export function getNimSuggestPath(): string {
+    let nimsuggest: string = vscode.workspace.getConfiguration('nim').get('nimsuggest');
+    if (nimsuggest) {
+        _nimSuggestPath = nimsuggest
+    }
     return _nimSuggestPath;
 }
 
@@ -167,11 +171,9 @@ export async function setNimSuggester(){
         const p = vscode.window.showQuickPick(items, { placeHolder: `current ${suggesterBin}`, matchOnDetail: true });
         p.then(item => {
             if (!item || suggesterBin === item.detail) return;
-            let nim = vscode.workspace.getConfiguration("nim")
-            if ( !!nim ) {
-                nim.update('nimsuggest',_nimSuggestPath)
-                commands.executeCommand('workbench.action.reloadWindow');
-            }
+            let nim = vscode.workspace.getConfiguration('nim');
+            nim.update('nimsuggest', item.detail)
+            commands.executeCommand('workbench.action.reloadWindow');
         })
     }
 }
@@ -317,9 +319,9 @@ async function getNimSuggestProcess(nimProject: string): Promise<NimSuggestProce
                     });
                 }
             });
-            process.stdout.once('data', (data) => {
-                console.log(data.toString());
-            });
+            // process.stdout.once('data', (data) => {
+            //     console.log(data.toString());
+            // });
             process.stderr.once('data', (data) => {
                 console.log(data.toString());
             });

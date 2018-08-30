@@ -18,6 +18,7 @@ export function showHideStatus() {
   }
   if (!vscode.window.activeTextEditor) {
     statusBarEntry.hide();
+    nimVerEntry.hide();
     return;
   }
   if (vscode.languages.match(NIM_MODE, vscode.window.activeTextEditor.document)) {
