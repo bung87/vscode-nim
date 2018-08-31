@@ -58,6 +58,7 @@ export function getProjectFile(filename: string) {
     if (filename && !path.isAbsolute(filename)) {
         filename = path.relative(vscode.workspace.rootPath, filename);
     }
+    
     if (!isProjectMode()) {
         return filename;
     }

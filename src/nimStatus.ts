@@ -6,7 +6,7 @@
 'use strict';
 
 import { NIM_MODE } from './nimMode';
-import vscode = require('vscode');
+import * as vscode from 'vscode';
 
 var statusBarEntry: vscode.StatusBarItem;
 var progressBarEntry: vscode.StatusBarItem;

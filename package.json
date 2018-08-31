@@ -24,7 +24,7 @@
     },
     "bugs": {
         "url": "https://github.com/pragmagic/vscode-nim/issues"
-	},
+    },
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
@@ -34,15 +34,15 @@
     "dependencies": {
         "bluebird": "^3.5.1",
         "lstat": "^1.0.0",
-        "nedb": "1.8.0"
+        "nedb": "1.8.0",
+        "vscode": "^1.0.0"
     },
     "devDependencies": {
-        "typescript": "^2.0.3",
-        "vscode": "^1.0.0",
-        "mocha": "^2.3.3",
-        "tslint": "^4.3.1",
+        "@types/mocha": "^2.2.32",
         "@types/node": "^6.0.40",
-        "@types/mocha": "^2.2.32"
+        "mocha": "^5.2.0",
+        "tslint": "^4.3.1",
+        "typescript": "^2.0.3"
     },
     "engines": {
         "vscode": "^1.7.0"
@@ -61,14 +61,27 @@
         "languages": [
             {
                 "id": "nim",
-                "aliases": ["Nim", "nim"],
-                "extensions": [".nim", ".nims", "nim.cfg", ".nim.cfg"],
+                "aliases": [
+                    "Nim",
+                    "nim"
+                ],
+                "extensions": [
+                    ".nim",
+                    ".nims",
+                    "nim.cfg",
+                    ".nim.cfg"
+                ],
                 "configuration": "./nimcfg.json"
             },
             {
                 "id": "nimble",
-                "aliases": ["Nimble", "nimble"],
-                "extensions": [".nimble"],
+                "aliases": [
+                    "Nimble",
+                    "nimble"
+                ],
+                "extensions": [
+                    ".nimble"
+                ],
                 "configuration": "./nimcfg.json"
             }
         ],
@@ -95,11 +108,13 @@
             }
         ],
         "menus": {
-            "editor/context": [{
-                "when": "editorLangId == 'nim'",
-                "command": "nim.run.file",
-                "group": "run@1"
-            }]
+            "editor/context": [
+                {
+                    "when": "editorLangId == 'nim'",
+                    "command": "nim.run.file",
+                    "group": "run@1"
+                }
+            ]
         },
         "keybindings": [
             {
@@ -112,10 +127,10 @@
             "type": "object",
             "title": "Nim configuration",
             "properties": {
-                "nim.nimsuggest":{
+                "nim.nimsuggest": {
                     "type": "string",
                     "default": "",
-                    "scope":"window",
+                    "scope": "window",
                     "description": "nimsuggest bin path"
                 },
                 "nim.project": {

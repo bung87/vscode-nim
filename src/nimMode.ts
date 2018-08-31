@@ -5,6 +5,6 @@
 
 'use strict';
 
-import vscode = require('vscode');
+import * as vscode from 'vscode';
 
 export const NIM_MODE: vscode.DocumentFilter = { language: 'nim', scheme: 'file' };

@@ -224,8 +224,8 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
     }
     try {
         let projectFile = getProjectFile(filename);
-        let normalizedFilename = filename.replace(/\\+/g, '/');
-        let desc = await getNimSuggestProcess(projectFile);
+        let normalizedFilename = projectFile.replace(/\\+/g, '/');
+        let desc = await getNimSuggestProcess(vscode.workspace.rootPath,normalizedFilename);
         let suggestCmd = NimSuggestType[suggestType];
         trace(desc.process.pid, projectFile, suggestCmd + ' ' + normalizedFilename + ':' + line + ':' + column);
         let ret = await desc.rpc.callMethod(suggestCmd, { kind: 'string', str: normalizedFilename }, { kind: 'number', n: line }, { kind: 'number', n: column }, { kind: 'string', str: dirtyFile });
@@ -257,7 +257,7 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
                 }
             } else if (ret === 'EPC Connection closed') {
                 console.error(ret);
-                await closeNimSuggestProcess(filename);
+                await closeNimSuggestProcess(vscode.workspace.rootPath);
             } else {
                 var item = new NimSuggestResult();
                 item.suggest = '' + ret;
@@ -271,7 +271,7 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
         return result;
     } catch (e) {
         console.error(e);
-        await closeNimSuggestProcess(filename);
+        await closeNimSuggestProcess(vscode.workspace.rootPath);
         return Promise.reject();
     }
 }
@@ -286,7 +286,7 @@ export async function closeAllNimSuggestProcesses(): Promise<void> {
 }
 
 export async function closeNimSuggestProcess(filename: string): Promise<void> {
-    var file = getProjectFile(filename);
+    var file = vscode.workspace.rootPath
     if (nimSuggestProcessCache[file]) {
         let desc = await nimSuggestProcessCache[file];
         desc.rpc.stop();
@@ -295,7 +295,7 @@ export async function closeNimSuggestProcess(filename: string): Promise<void> {
     }
 }
 
-async function getNimSuggestProcess(nimProject: string): Promise<NimSuggestProcessDescription> {
+async function getNimSuggestProcess(nimProject,filePath: string): Promise<NimSuggestProcessDescription> {
     if (!nimSuggestProcessCache[nimProject]) {
         nimSuggestProcessCache[nimProject] = new Promise<NimSuggestProcessDescription>((resolve, reject) => {
             let nimConfig = vscode.workspace.getConfiguration('nim');
@@ -307,8 +307,8 @@ async function getNimSuggestProcess(nimProject: string): Promise<NimSuggestProce
                 args.push('--refresh:on');
             }
 
-            args.push(nimProject);
-            let process = cp.spawn(getNimSuggestPath(), args, { cwd: vscode.workspace.rootPath });
+            args.push(filePath);
+            let process = cp.spawn(getNimSuggestPath(), args, { cwd: nimProject });
             process.stdout.once('data', (data) => {
                 let dataStr = data.toString();
                 let portNumber = parseInt(dataStr);
