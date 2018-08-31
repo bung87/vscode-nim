@@ -298,7 +298,7 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
         });
   
       
-    // });
+    // });// on ready
 }
 
 // export async function closeAllNimSuggestProcesses(): Promise<void> {

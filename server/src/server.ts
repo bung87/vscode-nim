@@ -3,7 +3,7 @@ import {
 } from 'vscode-languageserver';
 
 // import { initNimSuggest, setNimSuggester} from './nimSuggestExec';
-import { NimCompletionItemProvider } from './nimSuggest';
+// import { NimCompletionItemProvider } from './nimSuggest';
 // import { NimDefinitionProvider } from './nimDeclaration';
 // import { NimReferenceProvider } from './nimReferences';
 // import { NimHoverProvider } from './nimHover';

@@ -113,24 +113,27 @@ export function activate(ctx: vscode.ExtensionContext): void {
         console.error(e)
     });
     let nimsuggest: string = vscode.workspace.getConfiguration('nim').get('nimsuggest');
+    // let nimsuggest = ctx.asAbsolutePath(
+	// 	path.join('server', 'out', 'server.js')
+	// );
     let serverModule = nimsuggest;
         let nimConfig = vscode.workspace.getConfiguration('nim');
-            var args = ['--epc', '--v2'];
-            if (!!nimConfig['logNimsuggest']) {
+            var args = ['--epc','--v2'];
+            if (!!nimConfig.get('logNimsuggest')) {
                 args.push('--log');
             }
             if (!!nimConfig['useNimsuggestCheck']) {
                 args.push('--refresh:on');
             }
 
-            args.push(vscode.window.activeTextEditor.document.fileName);
-            console.log(serverModule,args)
+            args.push(getDirtyFile(vscode.window.activeTextEditor.document));
         let serverOptions: ServerOptions = {
             run: { module: serverModule, transport: TransportKind.socket ,options:{execArgv:args}},
             debug: {
                 module: serverModule,
                 transport: TransportKind.socket,
-                options: {execArgv:['--debug '].concat(args)}
+                
+                options: {execArgv:['--debug'].concat(args)}
             }
         };
 
@@ -146,33 +149,18 @@ export function activate(ctx: vscode.ExtensionContext): void {
 
         // Create the language client and start the client.
         client = new LanguageClient(
+            'nim',
             'Nim',
-            'Nim Language Client',
             serverOptions,
             clientOptions
         );
-
-        // client.onReady().then( ()=>{
-        //     ctx.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new NimWorkspaceSymbolProvider()));
-        //     ctx.subscriptions.push(vscode.languages.registerCompletionItemProvider(NIM_MODE, new NimCompletionItemProvider(), '.', ' '));
-        //     ctx.subscriptions.push(vscode.languages.registerDefinitionProvider(NIM_MODE, new NimDefinitionProvider()));
-        //     ctx.subscriptions.push(vscode.languages.registerReferenceProvider(NIM_MODE, new NimReferenceProvider()));
-        //     ctx.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(NIM_MODE, new NimDocumentSymbolProvider()));
-        //     ctx.subscriptions.push(vscode.languages.registerSignatureHelpProvider(NIM_MODE, new NimSignatureHelpProvider(), '(', ','));
-        //     ctx.subscriptions.push(vscode.languages.registerHoverProvider(NIM_MODE, new NimHoverProvider()));
-        //     ctx.subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider(NIM_MODE, new NimFormattingProvider()));
-        //     vscode.window.onDidChangeActiveTextEditor(showHideStatus, null, ctx.subscriptions);
-        // }).catch( e => {
-        //     console.error(e);
-        // })
-        
-
+        client.onDidChangeState( e =>{
+            console.log(e)
+        })
         // Start the client. This will also launch the server
         client.start();
 
-    client.onDidChangeState( e =>{
-        console.log(e)
-    })
+   
 
 }
 

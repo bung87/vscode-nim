@@ -26,7 +26,6 @@ export async function getNimExecPath(): Promise<string> {
     }else {
         binPath = await getBinPath('nim');
     }
-    console.log(555,binPath)
     if (!binPath) {
         vscode.window.showInformationMessage('No \'nim\' binary could be found in PATH environment variable');
         return Promise.reject();

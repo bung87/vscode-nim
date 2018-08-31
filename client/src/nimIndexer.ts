@@ -54,7 +54,7 @@ export async function initWorkspace(extensionPath: string): Promise<void> {
     dbFiles.ensureIndex({ fieldName: 'timestamp' });
 
     if (!getNimSuggestPath()) {
-        return;
+        return Promise.reject('Cant get nimsuggest path during initWorkspace');
     }
 
     let urls = await vscode.workspace.findFiles('**/*.nim', '');
@@ -98,7 +98,7 @@ export function findWorkspaceSymbols(query: string): Promise<vscode.SymbolInform
 
 export function getFileSymbols(file: string, dirtyFile?: string): Promise<vscode.SymbolInformation[]> {
     return new Promise<vscode.SymbolInformation[]>((resolve, reject) => {
-        return execNimSuggest(NimSuggestType.outline, file, 0, 0, dirtyFile)
+         execNimSuggest(NimSuggestType.outline, file, 0, 0, dirtyFile)
             .then(result => {
                 var symbols = [];
                 var exists = [];
