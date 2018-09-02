@@ -23,7 +23,9 @@ export async function getNimExecPath(): Promise<string> {
     let nimsuggest: string = vscode.workspace.getConfiguration('nim').get('nimsuggest');
     if (nimsuggest) {
         binPath = path.resolve(path.dirname(nimsuggest), 'nim');
-    }else {
+    }else if (typeof _pathesCache['nimsuggest']!=='undefined'){
+        binPath = path.resolve(path.dirname(_pathesCache['nimsuggest']), 'nim');
+    } else {
         binPath = await getBinPath('nim');
     }
     if (!binPath) {
@@ -103,16 +105,18 @@ export function prepareConfig(): void {
     }
 }
 
-export async function promiseSymbolLink(path: string): Promise<string>{
+export async function promiseSymbolLink(path: string): Promise<{path:string,type:string}>{
     if(!fs.existsSync(path)){
         return Promise.reject("")
     }
     try {
         return lstat(path).then(stat => {
             if (stat.isSymbolicLink()){
-                return Promise.resolve(path)
-            }else {
-                return Promise.reject("");
+                return Promise.resolve({path:path,type:"link"})
+            }else if(stat.isFile()) {
+                return Promise.resolve({path:path,type:"file"})
+            }else{
+                return Promise.reject()
             }
           }).catch( e => {
               console.error(e);
@@ -127,14 +131,31 @@ export async function promiseSymbolLink(path: string): Promise<string>{
 export async function getBinPath(tool: string): Promise<string> {
     if (_pathesCache[tool]) return Promise.resolve(_pathesCache[tool]);
     if (process.env['PATH']) {
-        var pathparts = (<string>process.env.PATH).split((<any>path).delimiter);
-        let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)));
-        let promises = pathes.map(x => promiseSymbolLink(x))
-        let anyLink = await bluebird.any(promises);
-        if (anyLink){
-            _pathesCache[tool] = anyLink;
+        var quikePath = ""
+        try{
+            quikePath = path.normalize(cp.execSync(`which ${tool}`).toString().trim())
+        }catch(e){
+            console.error(e)
         }
-        if (process.platform !== 'win32') {
+        if(quikePath){
+            _pathesCache[tool] = path.normalize(quikePath);
+            return Promise.resolve(quikePath)
+        }
+        var pathparts = (<string>process.env.PATH).split((<any>path).delimiter);
+        _pathesCache[tool] = pathparts.map(dir => path.join(dir, correctBinname(tool))).filter(candidate => fs.existsSync(candidate))[0];
+        // let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)));
+        // let promises = bluebird.map(pathes,x => promiseSymbolLink(x))
+        // let anyLink = await promises.any().catch(e =>{
+        //     console.error(e)
+        // });
+        // let msg = `No ${tool} binary could be found in PATH environment variable`
+        // if (typeof anyLink !=='undefined'){
+        //     _pathesCache[tool] = anyLink.path;
+        // }else{
+        //     vscode.window.showInformationMessage(msg);
+        //     return Promise.reject(msg)
+        // }
+        if ( process.platform !== 'win32') {
             try {
                 let nimPath;
                 if (process.platform === 'darwin') {
