@@ -29,7 +29,7 @@ export async function getNimExecPath(): Promise<string> {
         binPath = await getBinPath('nim');
     }
     if (!binPath) {
-        vscode.window.showInformationMessage('No \'nim\' binary could be found in PATH environment variable');
+        vscode.window.showErrorMessage('No \'nim\' binary could be found in PATH environment variable');
         return Promise.reject()
     }
     return Promise.resolve(binPath);
@@ -40,16 +40,8 @@ export async function getNimExecPath(): Promise<string> {
  */
 export async function getNimPrettyExecPath(): Promise<string> {
     let toolname = 'nimpretty';
-    if (!_pathesCache[toolname]) {
-        let binPath = await getNimExecPath()
-        let nimPrettyPath = path.resolve(binPath, correctBinname(toolname));
-        if (fs.existsSync(nimPrettyPath)) {
-            _pathesCache[toolname] = nimPrettyPath;
-        } else {
-            _pathesCache[toolname] = '';
-        }
-    }
-    return _pathesCache[toolname];
+    // since nimpretty not packaged with nim distrubtion,not use getNimExecPath here
+    return getBinPath(toolname);
 }
 
 export function setPathesCache(tool,path:string):void{
@@ -105,27 +97,30 @@ export function prepareConfig(): void {
     }
 }
 
-export async function promiseSymbolLink(path: string): Promise<{path:string,type:string}>{
-    if(!fs.existsSync(path)){
-        return Promise.reject("")
-    }
-    try {
-        return lstat(path).then(stat => {
-            if (stat.isSymbolicLink()){
-                return Promise.resolve({path:path,type:"link"})
-            }else if(stat.isFile()) {
-                return Promise.resolve({path:path,type:"file"})
-            }else{
-                return Promise.reject()
-            }
-          }).catch( e => {
-              console.error(e);
-            return Promise.reject("");
-          });
-    } catch ( e ) {
-        console.error(e);
-        return Promise.reject("");
-    }
+export  function promiseSymbolLink(path: string): Promise<{path:string,type:string}>{
+    return new Promise<{path:string,type:string}>( (resolve, reject) =>{
+        if(!fs.existsSync(path)){
+             reject("")
+        }
+        try {
+             lstat(path).then(stat => {
+                if (stat.isSymbolicLink()){
+                     resolve({path:path,type:"link"})
+                }else if(stat.isFile()) {
+                     resolve({path:path,type:"file"})
+                }else{
+                     reject()
+                }
+              }).catch( e => {
+                  console.error(e);
+                 reject("");
+              });
+        } catch ( e ) {
+            console.error(e);
+             reject("");
+        }
+    })
+   
 }
 
 export async function getBinPath(tool: string): Promise<string> {
@@ -141,20 +136,34 @@ export async function getBinPath(tool: string): Promise<string> {
             _pathesCache[tool] = path.normalize(quikePath);
             return Promise.resolve(quikePath)
         }
-        var pathparts = (<string>process.env.PATH).split((<any>path).delimiter);
-        _pathesCache[tool] = pathparts.map(dir => path.join(dir, correctBinname(tool))).filter(candidate => fs.existsSync(candidate))[0];
-        // let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)));
-        // let promises = bluebird.map(pathes,x => promiseSymbolLink(x))
-        // let anyLink = await promises.any().catch(e =>{
-        //     console.error(e)
-        // });
-        // let msg = `No ${tool} binary could be found in PATH environment variable`
-        // if (typeof anyLink !=='undefined'){
-        //     _pathesCache[tool] = anyLink.path;
-        // }else{
-        //     vscode.window.showInformationMessage(msg);
-        //     return Promise.reject(msg)
-        // }
+        var pathparts = (<string>process.env.PATH).split((<any>path).delimiter)
+            .filter( (value, index, self) => self.indexOf(value) === index )
+            .reverse();
+        pathparts = pathparts.filter(x => x.indexOf("/sbin") === -1)
+        pathparts = pathparts.filter(x => {
+            if(x.match("([a-zA-Z0-9_-]+)+[0-9\.]+") || x.match("\.[a-zA-Z]+")){
+                return x.toLowerCase().indexOf("nim") !== -1
+            }else{
+                return true
+            }
+        })
+        // _pathesCache[tool] = pathparts.map(dir => path.join(dir, correctBinname(tool))).filter(candidate => fs.existsSync(candidate))[0];
+        let pathes = pathparts.map(dir => path.join(dir, correctBinname(tool)));
+        let promises = bluebird.map(pathes,x => promiseSymbolLink(x))
+        let anyLink = await promises.any().catch(e =>{
+            console.error(e)
+        });
+        let msg = `No ${tool} binary could be found in PATH environment variable`
+        if (typeof anyLink !=='undefined'){
+            if(anyLink.type === 'link'){
+                _pathesCache[tool] = anyLink.path;
+            }else{
+                return Promise.resolve(anyLink.path)
+            }
+        }else{
+            // vscode.window.showInformationMessage(msg);
+            // return Promise.reject(msg)
+        }
         if ( process.platform !== 'win32') {
             try {
                 let nimPath;
@@ -174,6 +183,7 @@ export async function getBinPath(tool: string): Promise<string> {
                 }
             } catch (e) {
                 console.error(e);
+                vscode.window.showErrorMessage(msg);
                 return Promise.reject()
                 // ignore exception
             }
