@@ -63,6 +63,9 @@ export async function initWorkspace(extensionPath: string): Promise<void> {
     for (var i = 0; i < urls.length; i++) {
         let url = urls[i];
         let file = url.fsPath;
+        if(fs.statSync(url.fsPath).size >=1024**2){
+            continue
+        }
         let cnt = urls.length - i;
 
         if (cnt % 10 === 0) {

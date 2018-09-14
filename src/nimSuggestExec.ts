@@ -224,6 +224,9 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
     }
     try {
         let projectFile = getProjectFile(filename);
+        if(fs.statSync(projectFile).size>1024**2){
+            return [];
+        }
         let normalizedFilename = projectFile.replace(/\\+/g, '/');
         let desc = await getNimSuggestProcess(vscode.workspace.rootPath,normalizedFilename);
         let suggestCmd = NimSuggestType[suggestType];
