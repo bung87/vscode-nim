@@ -15,10 +15,8 @@ function generateUID(): number {
 
 export class EPCPeer {
     private socket: net.Socket;
-
     private receivedBuffer: Buffer;
     private sessions = new Map<number, (data: any) => void>();
-
     private socketClosed = false;
 
     constructor(socket: net.Socket) {
@@ -66,7 +64,6 @@ export class EPCPeer {
             let guid = generateUID();
 
             let payload = '(call ' + guid + ' ' + method + ' ' + sexp.toString({ kind: 'list', elements: parameter }) + ')';
-
             this.sessions[guid] = (data) => {
                 if (!(data instanceof Array)) {
                     reject(data);

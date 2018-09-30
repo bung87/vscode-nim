@@ -32,7 +32,10 @@ export class NimHoverProvider implements vscode.HoverProvider {
           } else {
             resolve(null);
           }
-        }).catch(reason => reject(reason));
+        }).catch(reason => {
+          console.error(reason);
+          reject(reason);
+        });
     });
   }
 

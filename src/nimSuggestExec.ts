@@ -227,6 +227,7 @@ export async function execNimSuggest(suggestType: NimSuggestType, filename: stri
         if(fs.statSync(projectFile).size>1024**2){
             return [];
         }
+
         let normalizedFilename = projectFile.replace(/\\+/g, '/');
         let desc = await getNimSuggestProcess(vscode.workspace.rootPath,normalizedFilename);
         let suggestCmd = NimSuggestType[suggestType];
@@ -299,10 +300,10 @@ export async function closeNimSuggestProcess(filename: string): Promise<void> {
 }
 
 async function getNimSuggestProcess(nimProject,filePath: string): Promise<NimSuggestProcessDescription> {
-    if (!nimSuggestProcessCache[nimProject]) {
-        nimSuggestProcessCache[nimProject] = new Promise<NimSuggestProcessDescription>((resolve, reject) => {
+    if (!nimSuggestProcessCache[filePath]) {
+        nimSuggestProcessCache[filePath] = new Promise<NimSuggestProcessDescription>((resolve, reject) => {
             let nimConfig = vscode.workspace.getConfiguration('nim');
-            var args = ['--epc', '--v2','--debug'];
+            var args = ['--epc'];
             if (!!nimConfig['logNimsuggest']) {
                 args.push('--log');
             }
@@ -313,7 +314,7 @@ async function getNimSuggestProcess(nimProject,filePath: string): Promise<NimSug
             args.push(filePath);
             let process = cp.spawn(getNimSuggestPath(), args, { cwd: nimProject });
             process.stdout.once('data', (data) => {
-                let dataStr = data.toString();
+                let dataStr = data.toString().trim();
                 let portNumber = parseInt(dataStr);
                 if (isNaN(portNumber)) {
                     reject('Nimsuggest returns unknown port number: ' + dataStr);
@@ -326,9 +327,9 @@ async function getNimSuggestProcess(nimProject,filePath: string): Promise<NimSug
             // process.stdout.once('data', (data) => {
             //     console.log(data.toString());
             // });
-            process.stderr.once('data', (data) => {
-                console.log(data.toString());
-            });
+            // process.stderr.once('data', (data) => {
+            //     console.log(data.toString());
+            // });
             process.on('close', (code: number, signal: string) => {
                 if (code !== 0) {
                     console.error('nimsuggest closed with code: ' + code + ', signal: ' + signal);
@@ -342,5 +343,5 @@ async function getNimSuggestProcess(nimProject,filePath: string): Promise<NimSug
             });
         });
     }
-    return nimSuggestProcessCache[nimProject];
+    return nimSuggestProcessCache[filePath];
 }

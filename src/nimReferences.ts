@@ -14,7 +14,8 @@ export class NimReferenceProvider implements vscode.ReferenceProvider {
 
   public provideReferences(document: vscode.TextDocument, position: vscode.Position, options: { includeDeclaration: boolean }, token: vscode.CancellationToken): Thenable<vscode.Location[]> {
     return new Promise((resolve, reject) => {
-      vscode.workspace.saveAll(false).then(() => {
+      vscode.workspace.saveAll(false).then((data) => {
+        console.log(data)
           execNimSuggest(NimSuggestType.use, document.fileName, position.line + 1, position.character, getDirtyFile(document))
             .then(result => {
               var references = [];
