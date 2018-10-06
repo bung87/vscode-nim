@@ -95,7 +95,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
     }
 }
 
-function deactivate() {
+export function deactivate() {
     closeAllNimSuggestProcesses();
     fileWatcher.dispose();
 }
